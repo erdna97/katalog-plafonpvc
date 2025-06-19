@@ -19,6 +19,8 @@
         body.admin-logged-in .admin-only { display: flex; } /* atau block, inline-flex, dll. */
         body.admin-logged-in .tombol-edit-admin { display: inline-flex; }
         body.admin-logged-in .tombol-hapus-admin { display: inline-flex; }
+        /* Styling untuk gambar yang bisa diklik */
+        .gambar-clickable { cursor: pointer; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -44,6 +46,7 @@
             <p class="mt-2 text-md text-gray-600">Temukan produk yang Anda butuhkan dengan mudah.</p>
         </div>
 
+        <!-- Filter dan Aksi -->
         <div class="mb-8 max-w-4xl mx-auto flex flex-col md:flex-row gap-4 items-center">
             <div class="relative flex-grow w-full">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -51,25 +54,32 @@
                 </div>
                 <input type="text" id="kolomPencarian" placeholder="Cari nama produk..." class="block w-full bg-white border border-gray-300 rounded-md py-3 pl-10 pr-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
             </div>
-            <!-- Tombol Tambah Produk (Hanya Admin) -->
             <button id="tombolTambah" class="admin-only w-full md:w-auto bg-blue-600 text-white font-semibold py-3 px-6 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
                 Tambah Produk
             </button>
         </div>
+        
+        <!-- Opsi Filter Stok -->
+        <div class="max-w-4xl mx-auto mb-8 flex justify-end">
+            <div class="flex items-center">
+                <input id="filterStok" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                <label for="filterStok" class="ml-2 block text-sm font-medium text-gray-700">Sembunyikan Stok Kosong</label>
+            </div>
+        </div>
+
 
         <main id="daftarProduk" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <!-- Loading indicator -->
              <p id="loadingIndicator" class="col-span-full text-center py-10 text-gray-500">Memuat produk...</p>
         </main>
         
         <div id="pesanKosong" class="hidden text-center py-16">
             <h3 class="text-xl font-semibold text-gray-700">Produk Tidak Ditemukan</h3>
-            <p class="text-gray-500 mt-2">Coba gunakan kata kunci lain atau tambah produk baru.</p>
+            <p class="text-gray-500 mt-2">Coba gunakan kata kunci lain atau ubah filter Anda.</p>
         </div>
     </div>
 
     <!-- Modal untuk Tambah/Edit Produk -->
-    <div id="modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0">
+    <div id="modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-30">
         <div class="modal-content bg-white w-full max-w-md rounded-lg shadow-xl p-6 transform scale-95">
             <h2 id="modalJudul" class="text-2xl font-bold mb-6">Tambah Produk Baru</h2>
             <form id="formProduk">
@@ -83,7 +93,7 @@
     </div>
 
     <!-- Modal untuk Login Admin -->
-    <div id="modalLogin" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0">
+    <div id="modalLogin" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-30">
         <div class="modal-content bg-white w-full max-w-sm rounded-lg shadow-xl p-6 transform scale-95">
             <h2 class="text-2xl font-bold mb-6 text-center">Admin Login</h2>
             <form id="formLogin">
@@ -95,6 +105,12 @@
         </div>
     </div>
     
+    <!-- Modal untuk Popup Gambar -->
+    <div id="modalGambar" class="modal-backdrop fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-40">
+        <button id="tombolTutupGambar" class="absolute top-4 right-4 text-white text-4xl font-bold">&times;</button>
+        <img id="gambarPopup" src="" alt="Gambar Produk Diperbesar" class="max-w-full max-h-[90vh] rounded-lg shadow-lg">
+    </div>
+
     <!-- Impor Firebase SDK -->
     <script type="module">
         // Import fungsi yang diperlukan dari Firebase SDK
@@ -102,8 +118,6 @@
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ===================================================================================
-        // PASTE KONFIGURASI FIREBASE ANDA DI SINI
         // ===================================================================================
         const firebaseConfig = {
             apiKey: "AIzaSyBFp75jbzgcMVEJw9QEVg6HxBeoYKnG5H0",
@@ -115,7 +129,6 @@
         };
         // ===================================================================================
 
-        // Inisialisasi Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -125,38 +138,34 @@
         const ui = {
             body: document.body,
             authContainer: document.getElementById('auth-container'),
-            loginButton: document.getElementById('loginButton'),
             kolomPencarian: document.getElementById('kolomPencarian'),
+            filterStokCheckbox: document.getElementById('filterStok'),
             daftarProduk: document.getElementById('daftarProduk'),
             pesanKosong: document.getElementById('pesanKosong'),
             loadingIndicator: document.getElementById('loadingIndicator'),
             modal: document.getElementById('modal'),
             modalLogin: document.getElementById('modalLogin'),
+            modalGambar: document.getElementById('modalGambar'),
+            gambarPopup: document.getElementById('gambarPopup'),
             formProduk: document.getElementById('formProduk'),
             formLogin: document.getElementById('formLogin'),
             tombolTambah: document.getElementById('tombolTambah'),
             tombolBatal: document.getElementById('tombolBatal'),
             tombolBatalLogin: document.getElementById('tombolBatalLogin'),
+            tombolTutupGambar: document.getElementById('tombolTutupGambar'),
             loginError: document.getElementById('loginError')
         };
         
-        let semuaProduk = []; // Cache untuk data produk
-        let unsubscribe; // Untuk listener onSnapshot
+        let semuaProduk = []; 
+        let unsubscribe;
 
         // --- LOGIKA OTENTIKASI ---
         onAuthStateChanged(auth, user => {
             if (user) {
-                // User (admin) sudah login
                 ui.body.classList.add('admin-logged-in');
-                ui.authContainer.innerHTML = `
-                    <div class="flex items-center gap-4">
-                         <p class="text-sm text-gray-600 hidden md:block">Login sebagai <span class="font-semibold">${user.email}</span></p>
-                         <button id="logoutButton" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-600 transition">Logout</button>
-                    </div>
-                `;
+                ui.authContainer.innerHTML = `<div class="flex items-center gap-4"><p class="text-sm text-gray-600 hidden md:block">Login sebagai <span class="font-semibold">${user.email}</span></p><button id="logoutButton" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-600 transition">Logout</button></div>`;
                 document.getElementById('logoutButton').addEventListener('click', () => signOut(auth));
             } else {
-                // User logout
                 ui.body.classList.remove('admin-logged-in');
                 ui.authContainer.innerHTML = `<button id="loginButton" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition">Admin Login</button>`;
                 document.getElementById('loginButton').addEventListener('click', () => bukaModalLogin());
@@ -165,13 +174,12 @@
 
         // --- LOGIKA DATABASE (FIRESTORE) ---
         function muatProduk() {
-            if(unsubscribe) unsubscribe(); // Hentikan listener lama jika ada
+            if(unsubscribe) unsubscribe(); 
             
             unsubscribe = onSnapshot(produkCollRef, snapshot => {
                 semuaProduk = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // Urutkan berdasarkan nama untuk konsistensi
                 semuaProduk.sort((a, b) => a.nama.localeCompare(b.nama));
-                handlePencarian(); // Tampilkan data awal
+                handlePencarian(); 
                 ui.loadingIndicator.classList.add('hidden');
             }, error => {
                 console.error("Gagal memuat produk: ", error);
@@ -189,12 +197,13 @@
                     const divProduk = document.createElement('div');
                     divProduk.className = 'bg-white border border-gray-200 rounded-lg shadow-md flex flex-col overflow-hidden group';
                     divProduk.innerHTML = `
-                        <div class="h-48 overflow-hidden"><img src="${produk.gambar}" alt="${produk.nama}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null;this.src='https://placehold.co/400x300/e2e8f0/94a3b8?text=Gambar+Rusak';"></div>
+                        <div class="h-48 overflow-hidden">
+                            <img src="${produk.gambar}" alt="${produk.nama}" class="gambar-clickable w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null;this.src='https://placehold.co/400x300/e2e8f0/94a3b8?text=Gambar+Rusak';">
+                        </div>
                         <div class="p-4 flex-grow flex flex-col">
                             <h2 class="text-lg font-bold text-gray-900 truncate flex-grow">${produk.nama}</h2>
                             <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
                                 <div><p class="text-sm text-gray-500">Stok:</p><p class="text-2xl font-semibold text-blue-600">${produk.stok}</p></div>
-                                <!-- Tombol Admin -->
                                 <div class="flex gap-2">
                                     <button data-id="${produk.id}" class="tombol-edit-admin admin-only p-2 rounded-full hover:bg-gray-100 transition"><svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536l12.232-12.232z"></path></svg></button>
                                     <button data-id="${produk.id}" class="tombol-hapus-admin admin-only p-2 rounded-full hover:bg-red-100 transition"><svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
@@ -209,7 +218,20 @@
         
         function handlePencarian() {
             const kataKunci = ui.kolomPencarian.value.toLowerCase().trim();
-            const hasil = semuaProduk.filter(p => p.nama.toLowerCase().includes(kataKunci));
+            const sembunyikanStokKosong = ui.filterStokCheckbox.checked;
+
+            let hasil = semuaProduk;
+
+            // Terapkan filter stok
+            if (sembunyikanStokKosong) {
+                hasil = hasil.filter(p => p.stok > 0);
+            }
+
+            // Terapkan filter pencarian nama
+            if (kataKunci) {
+                hasil = hasil.filter(p => p.nama.toLowerCase().includes(kataKunci));
+            }
+            
             tampilkanProduk(hasil);
         }
 
@@ -217,13 +239,13 @@
         function bukaModal(produk = null) {
             ui.formProduk.reset();
             const idInput = ui.formProduk.querySelector('#idProduk');
-            if (produk) { // Edit mode
+            if (produk) { 
                 ui.modal.querySelector('#modalJudul').textContent = 'Edit Produk';
                 idInput.value = produk.id;
                 ui.formProduk.querySelector('#namaProduk').value = produk.nama;
                 ui.formProduk.querySelector('#stokProduk').value = produk.stok;
                 ui.formProduk.querySelector('#gambarProduk').value = produk.gambar;
-            } else { // Tambah mode
+            } else {
                 ui.modal.querySelector('#modalJudul').textContent = 'Tambah Produk Baru';
                 idInput.value = '';
             }
@@ -251,8 +273,19 @@
             setTimeout(() => ui.modalLogin.classList.add('hidden'), 300);
         }
 
+        function bukaModalGambar(src) {
+            ui.gambarPopup.src = src;
+            ui.modalGambar.classList.remove('hidden');
+            setTimeout(() => ui.modalGambar.classList.remove('opacity-0'), 10);
+        }
+
+        function tutupModalGambar() {
+            ui.modalGambar.classList.add('opacity-0');
+            setTimeout(() => ui.modalGambar.classList.add('hidden'), 300);
+        }
+
         // --- EVENT HANDLERS ---
-        async function handleFormSubmit(e) {
+        async function handleFormSubmit(e) { /* ... (fungsi ini tidak berubah) ... */
             e.preventDefault();
             const id = ui.formProduk.querySelector('#idProduk').value;
             const data = {
@@ -261,11 +294,8 @@
                 gambar: ui.formProduk.querySelector('#gambarProduk').value,
             };
             try {
-                if (id) { // Edit
-                    await updateDoc(doc(db, 'produk', id), data);
-                } else { // Tambah
-                    await addDoc(produkCollRef, data);
-                }
+                if (id) { await updateDoc(doc(db, 'produk', id), data); } 
+                else { await addDoc(produkCollRef, data); }
                 tutupModal();
             } catch (error) {
                 console.error("Error saving document: ", error);
@@ -273,7 +303,7 @@
             }
         }
 
-        async function handleLoginSubmit(e) {
+        async function handleLoginSubmit(e) { /* ... (fungsi ini tidak berubah) ... */
             e.preventDefault();
             const email = ui.formLogin.querySelector('#emailLogin').value;
             const password = ui.formLogin.querySelector('#passwordLogin').value;
@@ -290,6 +320,13 @@
 
         function handleAksiProduk(e) {
             const tombol = e.target.closest('button');
+            const gambar = e.target.closest('.gambar-clickable');
+
+            if (gambar) {
+                bukaModalGambar(gambar.src);
+                return;
+            }
+
             if (!tombol) return;
             const id = tombol.dataset.id;
             if (tombol.classList.contains('tombol-edit-admin')) {
@@ -304,14 +341,21 @@
         
         // --- INISIALISASI ---
         ui.kolomPencarian.addEventListener('input', handlePencarian);
+        ui.filterStokCheckbox.addEventListener('change', handlePencarian);
         ui.tombolTambah.addEventListener('click', () => bukaModal());
         ui.tombolBatal.addEventListener('click', tutupModal);
         ui.tombolBatalLogin.addEventListener('click', tutupModalLogin);
+        ui.tombolTutupGambar.addEventListener('click', tutupModalGambar);
+        ui.modalGambar.addEventListener('click', (e) => { // Tutup jika klik di backdrop
+            if (e.target === ui.modalGambar) {
+                tutupModalGambar();
+            }
+        });
         ui.formProduk.addEventListener('submit', handleFormSubmit);
         ui.formLogin.addEventListener('submit', handleLoginSubmit);
         ui.daftarProduk.addEventListener('click', handleAksiProduk);
 
-        muatProduk(); // Muat data dari Firestore saat halaman dibuka
+        muatProduk();
     </script>
 </body>
 </html>
