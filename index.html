@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PlafonPVC Kutamis</title>
+    <title>PT. Multi Cipta Sanjaya</title>
     <!-- Memuat Tailwind CSS untuk styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Memuat Google Fonts: Inter -->
@@ -30,7 +30,7 @@
     <!-- Header -->
     <header class="bg-white shadow-sm sticky top-0 z-20">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <h1 class="text-xl font-bold text-blue-600">PlafonPVC Kutamis</h1>
+            <h1 class="text-xl font-bold text-blue-600">PT. Multi Cipta Sanjaya</h1>
             <div id="auth-container">
                 <button id="loginButton" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition">Admin Login</button>
             </div>
@@ -117,8 +117,21 @@
     </div>
 
     <!-- Modal Login, Modal Gambar, dll. -->
-    <div id="modalLogin" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-30"><!-- ... Konten tidak berubah ... --></div>
-    <div id="modalGambar" class="modal-backdrop fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50"><!-- ... Konten tidak berubah ... --></div>
+    <div id="modalLogin" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-30">
+        <div class="modal-content bg-white w-full max-w-sm rounded-lg shadow-xl p-6 transform scale-95">
+            <h2 class="text-2xl font-bold mb-6 text-center">Admin Login</h2>
+            <form id="formLogin">
+                <div class="mb-4"><label for="emailLogin" class="block text-sm font-medium text-gray-700 mb-1">Email</label><input type="email" id="emailLogin" required class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></div>
+                <div class="mb-6"><label for="passwordLogin" class="block text-sm font-medium text-gray-700 mb-1">Password</label><input type="password" id="passwordLogin" required class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></div>
+                <p id="loginError" class="text-red-500 text-sm mb-4 text-center hidden"></p>
+                <div class="flex justify-end gap-3"><button type="button" id="tombolBatalLogin" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md hover:bg-gray-300 transition">Batal</button><button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition">Login</button></div>
+            </form>
+        </div>
+    </div>
+    <div id="modalGambar" class="modal-backdrop fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50">
+        <button id="tombolTutupGambar" class="absolute top-4 right-4 text-white text-4xl font-bold">&times;</button>
+        <img id="gambarPopup" src="" alt="Gambar Produk Diperbesar" class="max-w-full max-h-[90vh] rounded-lg shadow-lg">
+    </div>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -141,9 +154,7 @@
         const golonganCollRef = collection(db, 'golongan');
 
         const ui = {
-            // ... (elemen UI yang sudah ada) ...
             body: document.body, authContainer: document.getElementById('auth-container'), kolomPencarian: document.getElementById('kolomPencarian'), filterStokCheckbox: document.getElementById('filterStok'), filterGolonganContainer: document.getElementById('filterGolonganContainer'), daftarProduk: document.getElementById('daftarProduk'), pesanKosong: document.getElementById('pesanKosong'), loadingIndicator: document.getElementById('loadingIndicator'), modal: document.getElementById('modal'), modalLogin: document.getElementById('modalLogin'), modalGambar: document.getElementById('modalGambar'), gambarPopup: document.getElementById('gambarPopup'), formProduk: document.getElementById('formProduk'), formLogin: document.getElementById('formLogin'), tombolTambah: document.getElementById('tombolTambah'), tombolBatal: document.getElementById('tombolBatal'), tombolBatalLogin: document.getElementById('tombolBatalLogin'), tombolTutupGambar: document.getElementById('tombolTutupGambar'), loginError: document.getElementById('loginError'),
-            // Elemen baru untuk kelola golongan
             modalKelolaGolongan: document.getElementById('modalKelolaGolongan'),
             tombolKelolaGolongan: document.getElementById('tombolKelolaGolongan'),
             tombolTutupKelolaGolongan: document.getElementById('tombolTutupKelolaGolongan'),
@@ -156,7 +167,17 @@
         let unsubProduk, unsubGolongan;
         let filterGolonganAktif = 'Semua';
 
-        onAuthStateChanged(auth, user => { /* ... (fungsi ini tidak berubah) ... */ });
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                ui.body.classList.add('admin-logged-in');
+                ui.authContainer.innerHTML = `<div class="flex items-center gap-4"><p class="text-sm text-gray-600 hidden md:block">Login sebagai <span class="font-semibold">${user.email}</span></p><button id="logoutButton" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-600 transition">Logout</button></div>`;
+                document.getElementById('logoutButton').addEventListener('click', () => signOut(auth));
+            } else {
+                ui.body.classList.remove('admin-logged-in');
+                ui.authContainer.innerHTML = `<button id="loginButton" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition">Admin Login</button>`;
+                document.getElementById('loginButton').addEventListener('click', () => bukaModalLogin());
+            }
+        });
 
         function muatData() {
             muatGolongan();
@@ -171,10 +192,21 @@
                 tampilkanFilterGolongan();
                 tampilkanOpsiGolongan();
                 tampilkanDaftarKelolaGolongan();
-            });
+            }, error => console.error("Gagal memuat golongan:", error));
         }
         
-        function muatProduk() { /* ... (fungsi ini tidak berubah) ... */ }
+        function muatProduk() {
+            if (unsubProduk) unsubProduk();
+             const q = query(produkCollRef, orderBy("nama"));
+             unsubProduk = onSnapshot(q, snapshot => {
+                semuaProduk = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                handlePencarian(); 
+                ui.loadingIndicator.classList.add('hidden');
+            }, error => {
+                console.error("Gagal memuat produk: ", error);
+                ui.daftarProduk.innerHTML = `<p class="col-span-full text-center py-10 text-red-500">Gagal terhubung ke database.</p>`;
+            });
+        }
 
         function tampilkanFilterGolongan() {
             ui.filterGolonganContainer.innerHTML = `<button class="filter-golongan px-4 py-2 text-sm rounded-full bg-gray-200 hover:bg-gray-300 transition" data-golongan="Semua">Semua</button>`;
@@ -185,13 +217,17 @@
                 btn.textContent = g.nama;
                 ui.filterGolonganContainer.appendChild(btn);
             });
-            // Terapkan kembali style active
             const btnAktif = ui.filterGolonganContainer.querySelector(`[data-golongan="${filterGolonganAktif}"]`);
-            if (btnAktif) btnAktif.classList.add('active');
-            else ui.filterGolonganContainer.querySelector('[data-golongan="Semua"]').classList.add('active');
+            if (btnAktif) {
+                btnAktif.classList.add('active');
+            } else {
+                 ui.filterGolonganContainer.querySelector('[data-golongan="Semua"]').classList.add('active');
+                 filterGolonganAktif = 'Semua';
+            }
         }
 
         function tampilkanOpsiGolongan() {
+            const selectedValue = ui.golonganProdukSelect.value;
             ui.golonganProdukSelect.innerHTML = '';
             semuaGolongan.forEach(g => {
                 const opt = document.createElement('option');
@@ -199,6 +235,7 @@
                 opt.textContent = g.nama;
                 ui.golonganProdukSelect.appendChild(opt);
             });
+            if (selectedValue) ui.golonganProdukSelect.value = selectedValue;
         }
 
         function tampilkanDaftarKelolaGolongan() {
@@ -208,13 +245,13 @@
                 item.className = 'flex justify-between items-center p-2 rounded-md hover:bg-gray-100';
                 item.innerHTML = `
                     <span>${g.nama}</span>
-                    <button data-id="${g.id}" class="tombol-hapus-golongan text-red-500 hover:text-red-700">&times;</button>
+                    <button data-id="${g.id}" class="tombol-hapus-golongan text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
                 `;
                 ui.daftarKelolaGolongan.appendChild(item);
             });
         }
 
-        function tampilkanProduk(daftar) { /* ... (fungsi ini tidak berubah, hanya update `produk.golongan` di innerHTML) ... */ 
+        function tampilkanProduk(daftar) {
             ui.daftarProduk.innerHTML = '';
             ui.pesanKosong.classList.toggle('hidden', daftar.length > 0);
             
@@ -243,16 +280,32 @@
             }
         }
         
-        function handlePencarian() { /* ... (fungsi ini tidak berubah) ... */ }
+        function handlePencarian() {
+            const kataKunci = ui.kolomPencarian.value.toLowerCase().trim();
+            const sembunyikanStokKosong = ui.filterStokCheckbox.checked;
 
-        function bukaModal(produk = null) { /* ... (fungsi ini tidak berubah, hanya update golonganProduk.value) ... */ 
+            let hasil = semuaProduk;
+            if (filterGolonganAktif !== 'Semua') {
+                hasil = hasil.filter(p => p.golongan === filterGolonganAktif);
+            }
+            if (sembunyikanStokKosong) {
+                hasil = hasil.filter(p => p.stok > 0);
+            }
+            if (kataKunci) {
+                hasil = hasil.filter(p => p.nama.toLowerCase().includes(kataKunci));
+            }
+            
+            tampilkanProduk(hasil);
+        }
+
+        function bukaModal(produk = null) {
             ui.formProduk.reset();
             const idInput = ui.formProduk.querySelector('#idProduk');
             if (produk) { 
                 ui.modal.querySelector('#modalJudul').textContent = 'Edit Produk';
                 idInput.value = produk.id;
                 ui.formProduk.querySelector('#namaProduk').value = produk.nama;
-                ui.golonganProdukSelect.value = produk.golongan || 'Plafon';
+                ui.golonganProdukSelect.value = produk.golongan || '';
                 ui.formProduk.querySelector('#stokProduk').value = produk.stok;
                 ui.formProduk.querySelector('#gambarProduk').value = produk.gambar;
             } else {
@@ -260,40 +313,31 @@
                 idInput.value = '';
             }
             ui.modal.classList.remove('hidden');
-            setTimeout(() => ui.modal.classList.remove('opacity-0'), 10);
-            setTimeout(() => ui.modal.querySelector('.modal-content').classList.remove('scale-95'), 50);
+            setTimeout(() => { 
+                ui.modal.classList.remove('opacity-0');
+                ui.modal.querySelector('.modal-content').classList.remove('scale-95');
+            }, 10);
         }
         
-        function bukaModalKelolaGolongan() {
-            ui.modalKelolaGolongan.classList.remove('hidden');
-            setTimeout(() => ui.modalKelolaGolongan.classList.remove('opacity-0'), 10);
-            setTimeout(() => ui.modalKelolaGolongan.querySelector('.modal-content').classList.remove('scale-95'), 50);
-        }
-
-        function tutupModalKelolaGolongan() {
-            ui.modalKelolaGolongan.classList.add('opacity-0');
-            ui.modalKelolaGolongan.querySelector('.modal-content').classList.add('scale-95');
-            setTimeout(() => ui.modalKelolaGolongan.classList.add('hidden'), 300);
+        function tutupModal(modalElement) {
+            modalElement.classList.add('opacity-0');
+            modalElement.querySelector('.modal-content').classList.add('scale-95');
+            setTimeout(() => modalElement.classList.add('hidden'), 300);
         }
         
-        async function handleFormKelolaGolongan(e) {
-            e.preventDefault();
-            const input = e.target.querySelector('#inputGolonganBaru');
-            const namaGolonganBaru = input.value.trim();
-            if (namaGolonganBaru) {
-                await addDoc(golonganCollRef, { nama: namaGolonganBaru });
-                input.value = '';
-            }
+        function bukaModalLogin() {
+            ui.formLogin.reset();
+            ui.modalLogin.classList.remove('hidden');
+            setTimeout(() => {
+                ui.modalLogin.classList.remove('opacity-0');
+                ui.modalLogin.querySelector('.modal-content').classList.remove('scale-95');
+            }, 10);
         }
 
-        function handleHapusGolongan(e) {
-            const tombol = e.target.closest('.tombol-hapus-golongan');
-            if (tombol) {
-                const id = tombol.dataset.id;
-                if (confirm('Apakah Anda yakin ingin menghapus golongan ini?')) {
-                    deleteDoc(doc(db, 'golongan', id));
-                }
-            }
+        function bukaModalGambar(src) {
+            ui.gambarPopup.src = src;
+            ui.modalGambar.classList.remove('hidden');
+            setTimeout(() => ui.modalGambar.classList.remove('opacity-0'), 10);
         }
 
         async function handleFormSubmit(e) {
@@ -308,33 +352,108 @@
             try {
                 if (id) { await updateDoc(doc(db, 'produk', id), data); } 
                 else { await addDoc(produkCollRef, data); }
-                tutupModal();
+                tutupModal(ui.modal);
             } catch (error) {
                 console.error("Error saving document: ", error);
                 alert("Gagal menyimpan data. Cek console untuk detail.");
             }
         }
-        
-        function handleFilterGolongan(e) { /* ... (fungsi ini tidak berubah) ... */ }
-        function handleAksiProduk(e) { /* ... (fungsi ini tidak berubah) ... */ }
 
-        // Event Listeners Baru
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            const email = ui.formLogin.querySelector('#emailLogin').value;
+            const password = ui.formLogin.querySelector('#passwordLogin').value;
+            ui.loginError.classList.add('hidden');
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                tutupModal(ui.modalLogin);
+            } catch (error) {
+                console.error("Login gagal: ", error.message);
+                ui.loginError.textContent = "Email atau password salah.";
+                ui.loginError.classList.remove('hidden');
+            }
+        }
+
+        function handleAksiProduk(e) {
+            const tombol = e.target.closest('button');
+            const gambar = e.target.closest('.gambar-clickable');
+
+            if (gambar) {
+                bukaModalGambar(gambar.src);
+                return;
+            }
+
+            if (!tombol) return;
+            const id = tombol.dataset.id;
+            if (tombol.classList.contains('tombol-edit-admin')) {
+                const produk = semuaProduk.find(p => p.id === id);
+                if (produk) bukaModal(produk);
+            } else if (tombol.classList.contains('tombol-hapus-admin')) {
+                if (confirm(`Apakah Anda yakin ingin menghapus produk ini?`)) {
+                    deleteDoc(doc(db, 'produk', id)).catch(err => console.error("Gagal menghapus: ", err));
+                }
+            }
+        }
+        
+        function handleFilterGolongan(e) {
+            const tombol = e.target.closest('.filter-golongan');
+            if (!tombol) return;
+            filterGolonganAktif = tombol.dataset.golongan;
+            ui.filterGolonganContainer.querySelectorAll('.filter-golongan').forEach(btn => btn.classList.remove('active'));
+            tombol.classList.add('active');
+            handlePencarian();
+        }
+
+        function bukaModalKelolaGolongan() {
+            ui.modalKelolaGolongan.classList.remove('hidden');
+            setTimeout(() => {
+                ui.modalKelolaGolongan.classList.remove('opacity-0');
+                ui.modalKelolaGolongan.querySelector('.modal-content').classList.remove('scale-95');
+            }, 10);
+        }
+
+        async function handleFormKelolaGolongan(e) {
+            e.preventDefault();
+            const input = e.target.querySelector('#inputGolonganBaru');
+            const namaGolonganBaru = input.value.trim();
+            if (namaGolonganBaru) {
+                try {
+                    await addDoc(golonganCollRef, { nama: namaGolonganBaru });
+                    input.value = '';
+                } catch(error) {
+                    console.error("Gagal menambah golongan:", error);
+                }
+            }
+        }
+
+        function handleHapusGolongan(e) {
+            const tombol = e.target.closest('.tombol-hapus-golongan');
+            if (tombol) {
+                const id = tombol.dataset.id;
+                if (confirm('Apakah Anda yakin ingin menghapus golongan ini?')) {
+                    deleteDoc(doc(db, 'golongan', id)).catch(err => console.error("Gagal menghapus golongan:", err));
+                }
+            }
+        }
+
         ui.tombolKelolaGolongan.addEventListener('click', bukaModalKelolaGolongan);
-        ui.tombolTutupKelolaGolongan.addEventListener('click', tutupModalKelolaGolongan);
+        ui.tombolTutupKelolaGolongan.addEventListener('click', () => tutupModal(ui.modalKelolaGolongan));
         ui.formKelolaGolongan.addEventListener('submit', handleFormKelolaGolongan);
         ui.daftarKelolaGolongan.addEventListener('click', handleHapusGolongan);
 
-        // Event Listeners Lama
         ui.kolomPencarian.addEventListener('input', handlePencarian);
         ui.filterStokCheckbox.addEventListener('change', handlePencarian);
         ui.filterGolonganContainer.addEventListener('click', handleFilterGolongan);
         ui.tombolTambah.addEventListener('click', () => bukaModal());
-        ui.tombolBatal.addEventListener('click', () => document.getElementById('modal').classList.add('hidden'));
+        ui.tombolBatal.addEventListener('click', () => tutupModal(ui.modal));
+        ui.tombolBatalLogin.addEventListener('click', () => tutupModal(ui.modalLogin));
+        ui.tombolTutupGambar.addEventListener('click', () => tutupModal(ui.modalGambar));
+        ui.modalGambar.addEventListener('click', (e) => { if (e.target === ui.modalGambar) { tutupModal(ui.modalGambar); } });
         ui.formProduk.addEventListener('submit', handleFormSubmit);
+        ui.formLogin.addEventListener('submit', handleLoginSubmit);
         ui.daftarProduk.addEventListener('click', handleAksiProduk);
-        // ... (dan event listener lainnya yang tidak berubah) ...
 
-        muatData(); // Memuat golongan dan produk saat aplikasi dimulai
+        muatData();
     </script>
 </body>
 </html>
