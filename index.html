@@ -321,8 +321,17 @@
         
         function tutupModal(modalElement) {
             modalElement.classList.add('opacity-0');
-            modalElement.querySelector('.modal-content').classList.add('scale-95');
-            setTimeout(() => modalElement.classList.add('hidden'), 300);
+            const content = modalElement.querySelector('.modal-content');
+            if (content) {
+                content.classList.add('scale-95');
+            }
+            setTimeout(() => {
+                modalElement.classList.add('hidden');
+                // Khusus untuk modal gambar, bersihkan src agar tidak ada flash gambar lama
+                if (modalElement.id === 'modalGambar') {
+                    ui.gambarPopup.src = "";
+                }
+            }, 300);
         }
         
         function bukaModalLogin() {
