@@ -13,10 +13,8 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .modal-backdrop, .modal-content { transition: all 0.3s ease-in-out; }
-        /* Aturan default untuk menyembunyikan elemen admin */
         .admin-only { display: none; }
-        /* Tampilkan elemen jika body memiliki kelas 'admin-logged-in' */
-        body.admin-logged-in .admin-only { display: flex; } /* Gunakan flex untuk floating button */
+        body.admin-logged-in .admin-only { display: flex; }
         body.admin-logged-in .tombol-edit-admin { display: inline-flex; }
         body.admin-logged-in .tombol-hapus-admin { display: inline-flex; }
         .gambar-clickable { cursor: pointer; }
@@ -32,7 +30,11 @@
     <!-- Header -->
     <header class="bg-white shadow-sm sticky top-0 z-20">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <h1 class="text-xl font-bold text-blue-600">PT. Multi Cipta Sanjaya</h1>
+            <div class="flex items-center gap-3">
+                <!-- LOGO ANDA: Pastikan file 'logo.png' sudah di-upload ke GitHub -->
+                <img src="logo.png" alt="Logo PT. Multi Cipta Sanjaya" class="h-10 w-auto">
+                <h1 class="text-xl font-bold text-blue-600">PT. Multi Cipta Sanjaya</h1>
+            </div>
             <div id="auth-container">
                 <button id="loginButton" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition">Admin Login</button>
             </div>
@@ -41,7 +43,6 @@
 
     <!-- Kontainer utama -->
     <div class="container mx-auto px-4 py-8 md:py-12">
-        
         <div class="text-center mb-8">
             <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Katalog Produk Kami</h2>
             <p class="mt-2 text-md text-gray-600">Temukan produk yang Anda butuhkan dengan mudah.</p>
@@ -59,9 +60,7 @@
         
         <!-- Filter -->
         <div class="max-w-4xl mx-auto mb-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div id="filterGolonganContainer" class="flex flex-wrap gap-2">
-                <!-- Filter golongan akan di-generate oleh JS -->
-            </div>
+            <div id="filterGolonganContainer" class="flex flex-wrap gap-2"></div>
             <div class="flex items-center">
                 <input id="filterStok" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                 <label for="filterStok" class="ml-2 block text-sm font-medium text-gray-700">Sembunyikan Stok Kosong</label>
@@ -88,7 +87,7 @@
                 <div class="mb-4">
                     <div class="flex justify-between items-center mb-1">
                         <label for="golonganProduk" class="block text-sm font-medium text-gray-700">Golongan</label>
-                        <button type="button" id="tombolKelolaGolongan" class="text-sm text-blue-600 hover:underline">Kelola Golongan</button>
+                        <button type="button" id="tombolKelolaGolongan" class="admin-only text-sm text-blue-600 hover:underline">Kelola Golongan</button>
                     </div>
                     <select id="golonganProduk" required class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
                 </div>
@@ -113,7 +112,17 @@
     </div>
 
     <!-- Modal Login -->
-    <div id="modalLogin" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-30"><!-- ... Konten modal tidak berubah ... --></div>
+    <div id="modalLogin" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-30">
+        <div class="modal-content bg-white w-full max-w-sm rounded-lg shadow-xl p-6 transform scale-95">
+            <h2 class="text-2xl font-bold mb-6 text-center">Admin Login</h2>
+            <form id="formLogin">
+                <div class="mb-4"><label for="emailLogin" class="block text-sm font-medium text-gray-700 mb-1">Email</label><input type="email" id="emailLogin" required class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></div>
+                <div class="mb-6"><label for="passwordLogin" class="block text-sm font-medium text-gray-700 mb-1">Password</label><input type="password" id="passwordLogin" required class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></div>
+                <p id="loginError" class="text-red-500 text-sm mb-4 text-center hidden"></p>
+                <div class="flex justify-end gap-3"><button type="button" id="tombolBatalLogin" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md hover:bg-gray-300 transition">Batal</button><button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition">Login</button></div>
+            </form>
+        </div>
+    </div>
     
     <!-- Modal Gambar -->
     <div id="modalGambar" class="modal-backdrop fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50">
@@ -123,15 +132,13 @@
 
     <!-- Tombol Tambah Produk (Floating) -->
     <button id="tombolTambah" class="admin-only items-center justify-center fixed bottom-8 right-8 bg-blue-600 text-white w-16 h-16 rounded-full shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition z-10">
-        <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
+        <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
     </button>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, orderBy, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBFp75jbzgcMVEJw9QEVg6HxBeoYKnG5H0",
@@ -237,10 +244,24 @@
             ui.daftarKelolaGolongan.innerHTML = '';
             semuaGolongan.forEach(g => {
                 const item = document.createElement('div');
-                item.className = 'flex justify-between items-center p-2 rounded-md hover:bg-gray-100';
+                item.className = 'golongan-item flex flex-col gap-2 p-2 rounded-md hover:bg-gray-100';
                 item.innerHTML = `
-                    <span>${g.nama}</span>
-                    <button data-id="${g.id}" class="tombol-hapus-golongan text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
+                    <div class="view-mode flex justify-between items-center w-full">
+                        <span>${g.nama}</span>
+                        <div class="flex gap-2 items-center">
+                            <button data-id="${g.id}" class="tombol-edit-golongan text-gray-500 hover:text-blue-600">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536l12.232-12.232z"></path></svg>
+                            </button>
+                            <button data-id="${g.id}" class="tombol-hapus-golongan text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
+                        </div>
+                    </div>
+                    <div class="edit-mode hidden flex justify-between items-center w-full gap-2">
+                        <input type="text" value="${g.nama}" class="edit-input-golongan flex-grow w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <div class="flex gap-1">
+                           <button data-id="${g.id}" data-old-name="${g.nama}" class="tombol-simpan-edit-golongan bg-green-500 text-white px-2 py-1 text-sm rounded-md">Simpan</button>
+                           <button class="tombol-batal-edit-golongan bg-gray-200 px-2 py-1 text-sm rounded-md">Batal</button>
+                        </div>
+                    </div>
                 `;
                 ui.daftarKelolaGolongan.appendChild(item);
             });
@@ -278,7 +299,6 @@
         function handlePencarian() {
             const kataKunci = ui.kolomPencarian.value.toLowerCase().trim();
             const sembunyikanStokKosong = ui.filterStokCheckbox.checked;
-
             let hasil = semuaProduk;
             if (filterGolonganAktif !== 'Semua') {
                 hasil = hasil.filter(p => p.golongan === filterGolonganAktif);
@@ -289,7 +309,6 @@
             if (kataKunci) {
                 hasil = hasil.filter(p => p.nama.toLowerCase().includes(kataKunci));
             }
-            
             tampilkanProduk(hasil);
         }
 
@@ -342,6 +361,10 @@
 
         async function handleFormSubmit(e) {
             e.preventDefault();
+            if (semuaGolongan.length === 0) {
+                alert("Silakan tambah golongan terlebih dahulu melalui 'Kelola Golongan'.");
+                return;
+            }
             const id = ui.formProduk.querySelector('#idProduk').value;
             const data = {
                 nama: ui.formProduk.querySelector('#namaProduk').value,
@@ -426,20 +449,71 @@
             }
         }
 
-        function handleHapusGolongan(e) {
-            const tombol = e.target.closest('.tombol-hapus-golongan');
-            if (tombol) {
-                const id = tombol.dataset.id;
-                if (confirm('Apakah Anda yakin ingin menghapus golongan ini?')) {
+        async function handleAksiKelolaGolongan(e) {
+            const itemContainer = e.target.closest('.golongan-item');
+            if (!itemContainer) return;
+            
+            const viewMode = itemContainer.querySelector('.view-mode');
+            const editMode = itemContainer.querySelector('.edit-mode');
+
+            if (e.target.closest('.tombol-hapus-golongan')) {
+                const id = e.target.closest('.tombol-hapus-golongan').dataset.id;
+                if (confirm('Apakah Anda yakin ingin menghapus golongan ini? Ini tidak akan mengubah produk yang sudah ada.')) {
                     deleteDoc(doc(db, 'golongan', id)).catch(err => console.error("Gagal menghapus golongan:", err));
                 }
             }
-        }
+            else if (e.target.closest('.tombol-edit-golongan')) {
+                viewMode.classList.add('hidden');
+                editMode.classList.remove('hidden');
+            }
+            else if (e.target.closest('.tombol-batal-edit-golongan')) {
+                viewMode.classList.remove('hidden');
+                editMode.classList.add('hidden');
+            }
+            else if (e.target.closest('.tombol-simpan-edit-golongan')) {
+                const tombolSimpan = e.target.closest('.tombol-simpan-edit-golongan');
+                const id = tombolSimpan.dataset.id;
+                const oldName = tombolSimpan.dataset.oldName;
+                const newName = itemContainer.querySelector('.edit-input-golongan').value.trim();
 
+                if (newName && newName !== oldName) {
+                    tombolSimpan.disabled = true;
+                    tombolSimpan.textContent = '...';
+
+                    try {
+                        const produkQuery = query(produkCollRef, where("golongan", "==", oldName));
+                        const produkSnapshot = await getDocs(produkQuery);
+
+                        const batch = writeBatch(db);
+
+                        const golonganDocRef = doc(db, 'golongan', id);
+                        batch.update(golonganDocRef, { nama: newName });
+                        
+                        produkSnapshot.forEach(productDoc => {
+                            batch.update(productDoc.ref, { golongan: newName });
+                        });
+
+                        await batch.commit();
+
+                        if(filterGolonganAktif === oldName) {
+                            filterGolonganAktif = newName;
+                        }
+
+                    } catch (error) {
+                        console.error("Gagal memperbarui nama golongan dan produk:", error);
+                        alert("Terjadi kesalahan. Silakan cek console.");
+                    }
+                } else {
+                     viewMode.classList.remove('hidden');
+                     editMode.classList.add('hidden');
+                }
+            }
+        }
+        
         ui.tombolKelolaGolongan.addEventListener('click', bukaModalKelolaGolongan);
         ui.tombolTutupKelolaGolongan.addEventListener('click', () => tutupModal(ui.modalKelolaGolongan));
         ui.formKelolaGolongan.addEventListener('submit', handleFormKelolaGolongan);
-        ui.daftarKelolaGolongan.addEventListener('click', handleHapusGolongan);
+        ui.daftarKelolaGolongan.addEventListener('click', handleAksiKelolaGolongan);
 
         ui.kolomPencarian.addEventListener('input', handlePencarian);
         ui.filterStokCheckbox.addEventListener('change', handlePencarian);
